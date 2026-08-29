@@ -1,8 +1,11 @@
 # MfaLab
 
-Startrepo för **övning 5.3: MFA i .NET med TOTP, kontolåsning och recovery codes** i kursen IT-säkerhet för utvecklare.
+Lösning på **övning 5.3: MFA i .NET med TOTP, kontolåsning och recovery codes** i
+kursen IT-säkerhet för utvecklare.
 
-Det här är en Blazor Web App på .NET 10 med ASP.NET Core Identity och EF Core (SQLite). All plumbing finns på plats: användare, inloggning, tvåfaktor och recovery codes. Din uppgift är att aktivera TOTP, verifiera det med en autentiseringsapp och sedan konfigurera kontolåsning och recovery codes. Hela uppgiftstexten med stegen ligger i Learnpoint.
+En Blazor Web App på .NET 10 med ASP.NET Core Identity och EF Core (SQLite), där
+tvåfaktor med autentiseringsapp, kontolåsning och hashade recovery codes är på
+plats och täckt av tester. Motiveringarna för valen finns i [REPORT.md](REPORT.md).
 
 ## Kom igång
 
@@ -17,7 +20,19 @@ Det här är en Blazor Web App på .NET 10 med ASP.NET Core Identity och EF Core
 dotnet run
 ```
 
-Öppna adressen som skrivs ut (till exempel `https://localhost:7288`). Logga in med testanvändaren nedan och gå sedan till **Konto → Two-factor authentication → Set up authenticator app**.
+Öppna adressen som skrivs ut (till exempel `https://localhost:7288`). Logga in med
+testanvändaren nedan och gå sedan till **Konto → Two-factor authentication → Set up
+authenticator app**.
+
+### Kör testerna
+
+```powershell
+dotnet test tests/MfaLab.Tests
+```
+
+Testerna startar den riktiga appen ur `Program.cs` med `WebApplicationFactory` mot
+en egen SQLite-fil, så att de ser exakt den Identity-konfiguration applikationen
+kör med.
 
 ### Testanvändare
 
@@ -28,25 +43,43 @@ En användare sås automatiskt vid första starten, så du slipper registrera di
 | E-post | `test@minapp.se` |
 | Lösenord | `Sommar2024!` |
 
-## Var du gör vad
+## Vad som är löst var
 
-| Steg i övningen | Var i koden eller appen |
-|-----------------|-------------------------|
-| Steg 2–5, aktivera och verifiera TOTP | Kör flödet i appen: **Konto → Two-factor authentication → Set up authenticator app**. Koden bakom ligger i `Components/Account/Pages/Manage/EnableAuthenticator.razor` (`GetAuthenticatorKeyAsync`, `VerifyTwoFactorTokenAsync`). |
-| Steg 7, kontolåsning | Två ställen. **1)** `Program.cs`, `TODO steg 7`: lägg `options.Lockout`-raderna i options-lambdan för `AddIdentityCore`, se [AddIdentityCore i stället för AddIdentity](#addidentitycore-i-stället-för-addidentity). **2)** `Components/Account/Pages/Login.razor`, cirka rad 124: byt `lockoutOnFailure: false` mot `true`. Mallen skickar redan en låst användare till `/Account/Lockout`. |
-| Steg 8, recovery codes | `Components/Account/Pages/Manage/GenerateRecoveryCodes.razor` använder `GenerateNewTwoFactorRecoveryCodesAsync`. Koderna lagras hashade av Identity och fungerar en gång var. |
-| Steg 9, motiveringarna | Skriv dem i `REPORT.md` (skapa filen) eller i din labbrapport. |
+| Steg i övningen | Var i koden |
+|-----------------|-------------|
+| Steg 2–5, aktivera och verifiera TOTP | `Components/Account/Pages/Manage/EnableAuthenticator.razor` hämtar nyckeln, bygger otpauth-URI:n och verifierar koden med `VerifyTwoFactorTokenAsync`. `Program.cs` registrerar `AuthenticatorTokenProvider` via `AddDefaultTokenProviders`. Kör flödet i appen under **Konto → Two-factor authentication**. |
+| Steg 7, kontolåsning | Två ställen. **1)** `Program.cs`: `MaxFailedAccessAttempts = 5`, `DefaultLockoutTimeSpan = 15 min`, `AllowedForNewUsers = true`. **2)** `Components/Account/Pages/Login.razor`: `lockoutOnFailure: true` i `PasswordSignInAsync`. Låsningssidan visar policyn direkt ur `IdentityOptions`. |
+| Steg 8, recovery codes | `Data/HashedRecoveryCodeUserStore.cs` lagrar koderna som PBKDF2-hashar i stället för mallens klartext, och löser in varje kod exakt en gång. `Components/Account/Pages/Manage/GenerateRecoveryCodes.razor` genererar tio och visar dem en enda gång. |
+| Steg 9, motiveringarna | [REPORT.md](REPORT.md) |
 
 ## Bra att veta
 
-### QR-koden fungerar direkt
+### QR-koden renderas serverside
 
-Standardmallen från Microsoft renderar ingen QR-kod, den visar bara en URI och hänvisar till ett externt bibliotek. Det här repot genererar QR-koden serverside med QRCoder och visar den som en färdig bild på uppsättningssidan. Ingen CDN, inget JavaScript-bibliotek att haka i. Det är ändringen i `Components/Account/Pages/Manage/EnableAuthenticator.razor`.
+Standardmallen från Microsoft renderar ingen QR-kod, den visar bara en URI och
+hänvisar till ett externt bibliotek. Det här repot genererar QR-koden serverside
+med QRCoder och visar den som en färdig bild på uppsättningssidan. Ingen CDN,
+inget JavaScript-bibliotek att haka i. Issuer i otpauth-URI:n är satt till
+`MfaLab`, så att kontot får ett begripligt namn i autentiseringsappen.
 
 ### AddIdentityCore i stället för AddIdentity
 
-Uppgiftstexten visar `AddIdentity<ApplicationUser, IdentityRole>(...)`. Blazor-mallen registrerar Identity med `AddIdentityCore<ApplicationUser>(...)` i stället, vilket är det normala för en Blazor-app utan roller. Lockout-inställningarna sätts på exakt samma `options.Lockout`-objekt, så resonemanget i uppgiften gäller oförändrat. Kodsnutten i uppgiften är alltså rätt i sak, den sitter bara i en app som redan valt Blazor-varianten.
+Uppgiftstexten visar `AddIdentity<ApplicationUser, IdentityRole>(...)`.
+Blazor-mallen registrerar Identity med `AddIdentityCore<ApplicationUser>(...)` i
+stället, vilket är det normala för en Blazor-app utan roller. Lockout-inställningarna
+sätts på exakt samma `options.Lockout`-objekt, så resonemanget i uppgiften gäller
+oförändrat.
+
+### Recovery codes lagras hashade
+
+Identitys inbyggda EF-store sparar de tio koderna som en semikolonseparerad
+klartextsträng i `AspNetUserTokens`, vilket gör en databasdump till tio färdiga
+andrafaktorer per användare. `HashedRecoveryCodeUserStore` ärver EF-storen och
+skriver om `ReplaceCodesAsync`, `RedeemCodeAsync` och `CountCodesAsync` så att
+varje kod lagras hashad. Resonemanget finns i [REPORT.md](REPORT.md).
 
 ### Databasen
 
-SQLite-filen skapas automatiskt vid första körningen. Vill du börja om från en ren databas, stäng appen och radera `.db`-filen, så sås testanvändaren på nytt vid nästa start.
+SQLite-filen skapas automatiskt vid första körningen. Vill du börja om från en
+ren databas, stäng appen och radera `.db`-filen, så sås testanvändaren på nytt
+vid nästa start.
