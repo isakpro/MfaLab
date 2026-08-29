@@ -44,6 +44,10 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
+    // Steg 2: AddDefaultTokenProviders registrerar AuthenticatorTokenProvider, den
+    // som räknar fram och validerar de sexsiffriga TOTP-koderna (RFC 6238, HMAC-SHA1,
+    // 30 sekunders tidsfönster). Utan den fungerar varken GetAuthenticatorKeyAsync,
+    // VerifyTwoFactorTokenAsync eller inloggningen via /Account/LoginWith2fa.
     .AddDefaultTokenProviders();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();

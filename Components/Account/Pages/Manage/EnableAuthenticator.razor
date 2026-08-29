@@ -68,7 +68,14 @@ else
 }
 
 @code {
+    // otpauth-URI:n som QR-koden kodar. {0} blir issuer, alltså namnet som visas
+    // i autentiseringsappen, {1} kontot och {2} den delade hemligheten i base32.
     private const string AuthenticatorUriFormat = "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
+
+    // Steg 3: standardmallen skickar med "Microsoft.AspNetCore.Identity.UI" som
+    // issuer, vilket blir ett obegripligt kontonamn i autentiseringsappen. Vi
+    // sätter appens eget namn i stället, så att kontot heter "MfaLab" i telefonen.
+    private const string IssuerName = "MfaLab";
 
     private string? message;
     private ApplicationUser? user;
@@ -183,7 +190,7 @@ else
         return string.Format(
             CultureInfo.InvariantCulture,
             AuthenticatorUriFormat,
-            UrlEncoder.Encode("Microsoft.AspNetCore.Identity.UI"),
+            UrlEncoder.Encode(IssuerName),
             UrlEncoder.Encode(email),
             unformattedKey);
     }
