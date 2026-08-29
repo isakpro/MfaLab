@@ -35,12 +35,18 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
         options.SignIn.RequireConfirmedAccount = false;
         options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
 
-        // TODO steg 7: aktivera kontolåsning här. Samma options-objekt som i
-        // uppgiftstexten, även om vi registrerar Identity med AddIdentityCore
-        // i stället för AddIdentity.
-        // options.Lockout.MaxFailedAccessAttempts = 5;
-        // options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
-        // options.Lockout.AllowedForNewUsers = true;
+        // Steg 7: kontolåsning. Samma options-objekt som i uppgiftstexten, även
+        // om vi registrerar Identity med AddIdentityCore i stället för AddIdentity.
+        // Fem försök rymmer normala felskrivningar men gör lösenordsgissning
+        // meningslös, och femton minuter kostar en angripare långt mer än den
+        // kostar en riktig användare. Avvägningen är motiverad i REPORT.md.
+        //
+        // Inställningarna gäller alla inloggningssteg som går via
+        // SignInManager, alltså även fel TOTP-kod på /Account/LoginWith2fa och
+        // fel recovery code, inte bara lösenordssteget.
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+        options.Lockout.AllowedForNewUsers = true;
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()

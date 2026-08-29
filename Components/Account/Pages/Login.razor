@@ -119,9 +119,12 @@
                 return;
             }
 
-            // This doesn't count login failures towards account lockout
-            // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-            result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+            // Steg 7: lockoutOnFailure: true gör att misslyckade lösenordsförsök
+            // räknas upp mot MaxFailedAccessAttempts i Program.cs. Utan flaggan
+            // har lockout-inställningarna ingen effekt på brute force mot
+            // lösenordet, och en låst användare skickas aldrig till
+            // /Account/Lockout eftersom PreSignInCheck aldrig ser låsningen.
+            result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
         }
 
         if (result.Succeeded)
