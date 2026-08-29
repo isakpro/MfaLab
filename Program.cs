@@ -56,6 +56,11 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     // VerifyTwoFactorTokenAsync eller inloggningen via /Account/LoginWith2fa.
     .AddDefaultTokenProviders();
 
+// Steg 8: byt ut EF-storen mot varianten som lagrar recovery codes hashade.
+// Registreringen måste ligga efter AddEntityFrameworkStores, eftersom den
+// sista registreringen av IUserStore<ApplicationUser> är den UserManager får.
+builder.Services.AddScoped<IUserStore<ApplicationUser>, HashedRecoveryCodeUserStore>();
+
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
 var app = builder.Build();
