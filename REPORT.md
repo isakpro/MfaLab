@@ -84,4 +84,13 @@ skulle jag välja tvärtom.
 
 ## Bevis: skärmbild av lyckad inloggning
 
-Skärmbilden av den lyckade tvåfaktorsinloggningen ligger i `docs/`.
+Inloggad som `test@minapp.se` efter tvåfaktorsinloggning, där andra steget var en
+sexsiffrig TOTP-kod ur Microsoft Authenticator.
+
+![Inloggad med tvåfaktor](docs/inloggning-2fa.png)
+
+Att kontot faktiskt kräver två faktorer syns i databasen: `TwoFactorEnabled = 1`
+och en `AuthenticatorKey` på 32 base32-tecken i `AspNetUserTokens`. Samma tabell
+innehåller `RecoveryCodes` på 849 tecken, alltså tio PBKDF2-hashar à 84 tecken
+plus nio avgränsare. I klartext hade de tio koderna tagit 119 tecken, så
+hashningen är aktiv i den körande appen och inte bara i testerna.
