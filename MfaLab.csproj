@@ -13,6 +13,22 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Program-klassen som top level-statements genererar är internal. Testprojektet
+         behöver se den för att kunna starta appen med WebApplicationFactory<Program>. -->
+    <InternalsVisibleTo Include="MfaLab.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Testprojektet ligger under app-projektets mapp, och SDK:n globbar in alla
+         .cs-filer därunder om vi inte säger ifrån. Utan det här försöker MfaLab
+         kompilera testerna, och dessutom testprojektets genererade AssemblyInfo. -->
+    <Compile Remove="tests\**" />
+    <Content Remove="tests\**" />
+    <EmbeddedResource Remove="tests\**" />
+    <None Remove="tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.9" />
